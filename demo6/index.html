@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Game</title>
+</head>
+<body>
+  <input id="inputText"/>
+  <button id="sendBtn">准备</button>
+</body>
+<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script>
+  //服务端与客户端同步的数据类型
+  function Desk(){
+    this.playerlist=[];
+    this.addPlayer = function(player){
+      player.position = this.playerlist.length;
+      this.playerlist.push(player);
+    }
+    this.getPlayer = function(username){
+      for(i=0;i<this.playerlist.length;i++){
+        if(this.playerlist[i].username == username){
+          return this.playerlist[i];
+        }
+      }
+      return null;
+    }
+  }
+  function Player(name){
+    this.username = name;
+    this.position = -1;
+    this.cards = [];
+  }
+  //--------------------------------------
+
+  var desk = new Desk();
+
+</script>
+<script>
+  var playerMe;
+  var socket = io('ws://localhost:3000/');
+  //获取微信用户名和头像,测试用随机数代替。
+  var username = 'user'+Math.floor(Math.random()*100);
+  socket.emit('username',username);
+
+  socket.on('enter',function(data){
+    desk.playerlist = data.playerlist;
+    showDesk(desk);
+    playerMe = desk.getPlayer(username);
+    showPlayer(playerMe);
+  })
+  socket.on('message',function(data){
+    showMessage('message',data)
+  })
+  socket.on('leave',function(data){
+    showMessage('leave',data)
+  })
+  socket.on('dealcard',function(data){
+    desk.cards = data.cards;
+    showDesk(desk);
+  })
+  document.getElementById('sendBtn').onclick = function(){
+    socket.emit('ready','');
+  }
+
+  function showDesk(desk){
+    var div = document.createElement('div');
+    div.innerHTML = "当前玩家列表:";
+    document.body.appendChild(div);
+
+    desk.playerlist.forEach(function(element) {
+      var div = document.createElement('div');
+      div.innerHTML = element.username;
+      document.body.appendChild(div);
+    }, this);
+  }
+  
+  function showPlayer(player){
+    showMessage("我是"+player.username);
+    showMessage("我在"+player.position+"号位置");
+  }
+
+  function showMessage(str){
+    var div = document.createElement('div');
+    div.innerHTML = str;
+    document.body.appendChild(div);
+  }
+</script>
+</html>
